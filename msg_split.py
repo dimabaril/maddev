@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 
 # MAX_LEN = 4296
-MAX_LEN = 335
+MAX_LEN = 500
 ALLOWED_TO_SPLIT_TAGS = {
     "[document]",
     "p",
@@ -19,11 +19,19 @@ class SplitMessageException(Exception):
     pass
 
 
+def split_plain_text(text: str, length=MAX_LEN):
+    return [text[i : i + length] for i in range(0, len(text), length)]
+
+
 def split_message(source: str, max_len=MAX_LEN):
     """Splits the original message (`source`) into fragments of the specified length
     (`max_len`)."""
 
     soup = BeautifulSoup(source, "html.parser")
+
+    if soup.find() is None:
+        return split_plain_text(source, max_len)
+
     current_fragment = ""
     fragments = []
     opened_tags_stack: list[str] = []
@@ -97,7 +105,9 @@ def split_message(source: str, max_len=MAX_LEN):
 
 
 if __name__ == "__main__":
-    with open("source_my.html") as file:
+    # with open("source.html") as file:
+    # with open("source_my.html") as file:
+    with open("source_no_tags.html") as file:
         message = file.read()
 
     fragments = split_message(message)
