@@ -1,7 +1,9 @@
+from typing import Generator
+
 from bs4 import BeautifulSoup
 
-# MAX_LEN = 4296
-MAX_LEN = 500
+MAX_LEN = 4296
+# MAX_LEN = 500
 ALLOWED_TO_SPLIT_TAGS = {
     "[document]",
     "p",
@@ -20,20 +22,21 @@ class SplitMessageException(Exception):
 
 
 def split_plain_text(text: str, length=MAX_LEN):
-    return [text[i : i + length] for i in range(0, len(text), length)]
+    for i in range(0, len(text), length):
+        yield text[i : i + length]
 
 
-def split_message(source: str, max_len=MAX_LEN):
+def split_message(source: str, max_len=MAX_LEN) -> Generator[str, None, None]:
     """Splits the original message (`source`) into fragments of the specified length
     (`max_len`)."""
 
     soup = BeautifulSoup(source, "html.parser")
 
     if soup.find() is None:
-        return split_plain_text(source, max_len)
+        yield from split_plain_text(source, max_len)
+        return
 
     current_fragment = ""
-    fragments = []
     opened_tags_stack: list[str] = []
 
     def process_element(content):
@@ -41,7 +44,6 @@ def split_message(source: str, max_len=MAX_LEN):
         nonlocal opened_tags_stack
 
         if hasattr(content, "children") and content.name in ALLOWED_TO_SPLIT_TAGS:
-
             if content.name and content.name != "[document]":
                 old_closing_tags = "".join(
                     f"</{tag}>" for tag in reversed(opened_tags_stack)
@@ -61,13 +63,13 @@ def split_message(source: str, max_len=MAX_LEN):
                     + len(closing_tags)
                     > max_len
                 ):
-                    fragments.append(current_fragment + old_closing_tags)
+                    yield current_fragment + old_closing_tags
                     current_fragment = "".join(f"<{tag}>" for tag in opened_tags_stack)
                 else:
                     current_fragment += str(content).split(">")[0] + ">"
 
             for child in content.children:
-                process_element(child)
+                yield from process_element(child)
 
             if content.name and content.name != "[document]":
                 opened_tags_stack.pop()
@@ -88,30 +90,28 @@ def split_message(source: str, max_len=MAX_LEN):
                     f"Element {current_fragment[:50]}... is too large to be split, length: {len(current_fragment)} > max_len: {max_len}"
                 )
 
-            fragments.append(current_fragment)
+            yield current_fragment
 
             current_fragment = opening_tags + element_html
         else:
             current_fragment += element_html
 
-    process_element(soup)
+    yield from process_element(soup)
 
     # add final fragment
     if current_fragment:
         current_fragment += "".join(f"</{tag}>" for tag in reversed(opened_tags_stack))
-        fragments.append(current_fragment)
-
-    return fragments
+        yield current_fragment
 
 
 if __name__ == "__main__":
-    # with open("source.html") as file:
-    # with open("source_my.html") as file:
-    with open("source_no_tags.html") as file:
+    with open("source.html") as file:
+        # with open("source_my.html") as file:
+        # with open("source_no_tags.html") as file:
         message = file.read()
 
-    fragments = split_message(message)
+    fragments_generator = split_message(message)
 
-    for i, fragment in enumerate(fragments):
+    for i, fragment in enumerate(fragments_generator):
         print(f"-------- fragment #{i + 1}: {len(fragment)} chars --------")
         print(fragment)
