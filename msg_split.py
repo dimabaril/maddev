@@ -2,8 +2,8 @@ from typing import Generator
 
 from bs4 import BeautifulSoup
 
-MAX_LEN = 4296
-# MAX_LEN = 500
+MAX_LEN = 4096
+
 ALLOWED_TO_SPLIT_TAGS = {
     "[document]",
     "p",
@@ -102,16 +102,3 @@ def split_message(source: str, max_len=MAX_LEN) -> Generator[str, None, None]:
     if current_fragment:
         current_fragment += "".join(f"</{tag}>" for tag in reversed(opened_tags_stack))
         yield current_fragment
-
-
-if __name__ == "__main__":
-    with open("source.html") as file:
-        # with open("source_my.html") as file:
-        # with open("source_no_tags.html") as file:
-        message = file.read()
-
-    fragments_generator = split_message(message)
-
-    for i, fragment in enumerate(fragments_generator):
-        print(f"-------- fragment #{i + 1}: {len(fragment)} chars --------")
-        print(fragment)
