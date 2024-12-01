@@ -1,6 +1,6 @@
 import pytest
 
-from msg_split import SplitMessageException, split_message
+from services.msg_split import SplitMessageException, split_message
 
 plain_text = "This is a long text that needs to be split into smaller fragments."
 

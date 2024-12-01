@@ -1,6 +1,6 @@
 import argparse
 
-from msg_split import split_message
+from services.msg_split import split_message
 
 MAX_LEN = 4096
 
